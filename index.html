@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clauding - Autonomous AI Development Environment</title>
+  <meta name="description" content="A sandboxed Docker environment with Claude, Codex, and Gemini CLIs. One script. Full autonomy. Zero supervision.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #06080c;
+      --bg-surface: #0c1018;
+      --bg-card: #111820;
+      --bg-card-hover: #161e2a;
+      --border: #1a2332;
+      --border-bright: #243044;
+      --text-primary: #e8edf4;
+      --text-secondary: #7a8ba3;
+      --text-muted: #4a5a70;
+      --accent: #22d3ee;
+      --accent-dim: #0e7490;
+      --accent-glow: rgba(34, 211, 238, 0.15);
+      --accent-2: #a78bfa;
+      --accent-3: #34d399;
+      --accent-red: #f87171;
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-bright) var(--bg-deep);
+    }
+
+    body {
+      font-family: var(--font-display);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- Grain overlay --- */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* --- Nav --- */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(6, 8, 12, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .nav-logo span { color: var(--text-muted); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+
+    .lang-switcher {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .lang-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-btn:hover { color: var(--text-secondary); }
+    .lang-btn.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* --- Hero --- */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 2rem 4rem;
+      position: relative;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 70% 50% at 50% 50%, black 20%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 50% at 50% 50%, black 20%, transparent 100%);
+      opacity: 0.4;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: 100px;
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      position: relative;
+      animation: fadeInUp 0.6s ease both;
+    }
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-3);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero h1 {
+      font-size: clamp(3.5rem, 8vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      position: relative;
+      animation: fadeInUp 0.6s ease 0.1s both;
+    }
+
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      color: var(--text-secondary);
+      max-width: 580px;
+      margin-top: 1.5rem;
+      font-weight: 300;
+      line-height: 1.7;
+      position: relative;
+      animation: fadeInUp 0.6s ease 0.2s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      position: relative;
+      animation: fadeInUp 0.6s ease 0.3s both;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent);
+      color: var(--bg-deep);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 0.85rem 1.8rem;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background: #67e8f9;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(34, 211, 238, 0.3);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 0.85rem 1.8rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-bright);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--text-muted);
+    }
+
+    .hero-terminal {
+      margin-top: 4rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 12px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 720px;
+      position: relative;
+      animation: fadeInUp 0.6s ease 0.4s both;
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .terminal-dot:nth-child(1) { background: #f87171; }
+    .terminal-dot:nth-child(2) { background: #fbbf24; }
+    .terminal-dot:nth-child(3) { background: #34d399; }
+    .terminal-bar span {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .terminal-body {
+      padding: 1.25rem 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.9;
+      text-align: left;
+    }
+    .terminal-body .prompt { color: var(--accent-3); }
+    .terminal-body .cmd { color: var(--text-primary); }
+    .terminal-body .comment { color: var(--text-muted); }
+    .terminal-body .output { color: var(--text-secondary); }
+
+    /* --- Section layout --- */
+    section {
+      padding: 6rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      max-width: 600px;
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* --- Tools --- */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+
+    .tool-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem 1.5rem;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tool-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent), transparent); }
+    .tool-card:nth-child(2)::before { background: linear-gradient(90deg, var(--accent-3), transparent); }
+    .tool-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent-2), transparent); }
+    .tool-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+    .tool-card:hover::before { opacity: 1; }
+
+    .tool-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+    .tool-card:nth-child(1) .tool-icon {
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+    }
+    .tool-card:nth-child(2) .tool-icon {
+      background: rgba(52, 211, 153, 0.1);
+      color: var(--accent-3);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    .tool-card:nth-child(3) .tool-icon {
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--accent-2);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+    }
+
+    .tool-card h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .tool-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    .tool-commands {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .tool-commands code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--bg-deep);
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+      display: inline-block;
+      width: fit-content;
+    }
+    .tool-commands code .flag { color: var(--accent-red); font-size: 0.7rem; }
+
+    /* --- Features --- */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.75rem;
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      border-color: var(--border-bright);
+    }
+
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      display: block;
+      width: 44px;
+      height: 44px;
+      line-height: 44px;
+      text-align: center;
+      background: var(--bg-deep);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* --- Use Cases --- */
+    .usecases-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+
+    .usecase-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .usecase-card:hover {
+      border-color: var(--border-bright);
+      background: var(--bg-card);
+    }
+
+    .usecase-num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .usecase-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .usecase-card p {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* --- Install --- */
+    .install-section {
+      text-align: center;
+    }
+
+    .install-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 14px;
+      padding: 2.5rem;
+      margin-top: 3rem;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .install-step {
+      margin-bottom: 1.75rem;
+    }
+    .install-step:last-child { margin-bottom: 0; }
+
+    .install-step-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.6rem;
+    }
+
+    .install-cmd {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .install-cmd .prompt-char { color: var(--text-muted); margin-right: 0.5rem; }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    /* --- Footer --- */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-creator {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+    .footer-creator strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text-secondary); }
+
+    /* --- Animations --- */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* --- Divider --- */
+    .divider {
+      max-width: 1100px;
+      margin: 0 auto;
+      border: none;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      .tools-grid,
+      .features-grid,
+      .usecases-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links { display: none; }
+      nav { padding: 0.75rem 1rem; }
+      section { padding: 4rem 1.25rem; }
+      .hero { padding: 7rem 1.25rem 3rem; }
+      .terminal-body { font-size: 0.75rem; padding: 1rem; }
+      .install-cmd { font-size: 0.75rem; flex-direction: column; align-items: flex-start; }
+    }
+
+    /* --- Demo terminal --- */
+    #demo-lines .line {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #demo-lines .line.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #demo-lines .line.user-prompt {
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+    }
+    #demo-lines .line.user-prompt .label {
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+    #demo-lines .line.claude-line {
+      color: var(--text-secondary);
+    }
+    #demo-lines .line.claude-line .label {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    #demo-lines .line.action {
+      color: var(--text-muted);
+      padding-left: 1rem;
+      font-size: 0.8rem;
+    }
+    #demo-lines .line.action .check {
+      color: var(--accent-3);
+    }
+    #demo-lines .line.done {
+      color: var(--accent-3);
+      font-weight: 500;
+      margin-top: 0.5rem;
+    }
+    #demo-lines .line.done .label {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .spinner {
+      display: inline-block;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #demo-lines .cursor-blink {
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* --- Language visibility --- */
+    [data-i18n] { display: none; }
+    [data-lang="en"] [data-i18n="en"],
+    [data-lang="de"] [data-i18n="de"],
+    [data-lang="tr"] [data-i18n="tr"] {
+      display: revert;
+    }
+    /* For inline elements inside flex/grid parents */
+    span[data-i18n], a[data-i18n] { display: none; }
+    [data-lang="en"] span[data-i18n="en"],
+    [data-lang="en"] a[data-i18n="en"],
+    [data-lang="de"] span[data-i18n="de"],
+    [data-lang="de"] a[data-i18n="de"],
+    [data-lang="tr"] span[data-i18n="tr"],
+    [data-lang="tr"] a[data-i18n="tr"] {
+      display: inline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="#" class="nav-logo">clauding<span>.sh</span></a>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li>
+          <a href="#tools" data-i18n="en">Tools</a>
+          <a href="#tools" data-i18n="de">Tools</a>
+          <a href="#tools" data-i18n="tr">Ara&ccedil;lar</a>
+        </li>
+        <li>
+          <a href="#features" data-i18n="en">Features</a>
+          <a href="#features" data-i18n="de">Funktionen</a>
+          <a href="#features" data-i18n="tr">&Ouml;zellikler</a>
+        </li>
+        <li>
+          <a href="#usecases" data-i18n="en">Use Cases</a>
+          <a href="#usecases" data-i18n="de">Anwendungen</a>
+          <a href="#usecases" data-i18n="tr">Kullan&inodot;m</a>
+        </li>
+        <li>
+          <a href="#install" data-i18n="en">Get Started</a>
+          <a href="#install" data-i18n="de">Loslegen</a>
+          <a href="#install" data-i18n="tr">Ba&scedil;la</a>
+        </li>
+      </ul>
+      <div class="lang-switcher">
+        <button class="lang-btn active" data-set-lang="en">EN</button>
+        <button class="lang-btn" data-set-lang="de">DE</button>
+        <button class="lang-btn" data-set-lang="tr">TR</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+
+    <div class="hero-badge">
+      <span class="dot"></span>
+      <span data-i18n="en">Open source &middot; Works on any Linux machine</span>
+      <span data-i18n="de">Open Source &middot; L&auml;uft auf jeder Linux-Maschine</span>
+      <span data-i18n="tr">A&ccedil;&inodot;k kaynak &middot; Her Linux makinesinde &ccedil;al&inodot;&scedil;&inodot;r</span>
+    </div>
+
+    <h1>
+      <span data-i18n="en">Let AI code.<br><span class="highlight">Unsupervised.</span></span>
+      <span data-i18n="de">Lass KI coden.<br><span class="highlight">Ohne Aufsicht.</span></span>
+      <span data-i18n="tr">Yapay zeka kodlas&inodot;n.<br><span class="highlight">G&ouml;zetimsiz.</span></span>
+    </h1>
+
+    <p class="hero-sub">
+      <span data-i18n="en">A sandboxed Docker environment with Claude, Codex, and Gemini. All three AI CLIs, pre-configured with full autonomy. One script to set it all up.</span>
+      <span data-i18n="de">Eine isolierte Docker-Umgebung mit Claude, Codex und Gemini. Alle drei KI-CLIs, vorkonfiguriert mit voller Autonomie. Ein einziges Script f&uuml;r die komplette Einrichtung.</span>
+      <span data-i18n="tr">Claude, Codex ve Gemini i&ccedil;eren sandbox Docker ortam&inodot;. &Uuml;&ccedil; yapay zeka CLI&rsquo;s&inodot;, tam otonomi ile &ouml;n yap&inodot;land&inodot;r&inodot;lm&inodot;&scedil;. Tek bir script ile her &scedil;ey haz&inodot;r.</span>
+    </p>
+
+    <div class="hero-actions">
+      <a href="#install" class="btn-primary">
+        <span data-i18n="en">Get Started</span>
+        <span data-i18n="de">Loslegen</span>
+        <span data-i18n="tr">Ba&scedil;la</span>
+        &darr;
+      </a>
+      <a href="https://github.com/ramazanyavuz/clauding" class="btn-secondary" target="_blank">
+        GitHub &rarr;
+      </a>
+    </div>
+
+    <div class="hero-terminal" id="hero-demo">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span>clauding</span>
+      </div>
+      <div class="terminal-body" id="demo-body">
+        <div id="demo-lines"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Tools -->
+  <section id="tools" class="reveal">
+    <div class="section-label">
+      <span data-i18n="en">Included Tools</span>
+      <span data-i18n="de">Enthaltene Tools</span>
+      <span data-i18n="tr">Dahili Ara&ccedil;lar</span>
+    </div>
+    <h2 class="section-title">
+      <span data-i18n="en">Three AI powerhouses.<br>One container.</span>
+      <span data-i18n="de">Drei KI-Schwergewichte.<br>Ein Container.</span>
+      <span data-i18n="tr">&Uuml;&ccedil; yapay zeka devi.<br>Tek container.</span>
+    </h2>
+    <p class="section-desc">
+      <span data-i18n="en">Each tool runs in bypass mode by default for fully autonomous operation. Need the standard approval flow? Just append <code>-normal</code> to any command.</span>
+      <span data-i18n="de">Jedes Tool l&auml;uft standardm&auml;&szlig;ig im Bypass-Modus f&uuml;r vollst&auml;ndig autonomes Arbeiten. Du brauchst den normalen Freigabeprozess? H&auml;nge einfach <code>-normal</code> an jeden Befehl an.</span>
+      <span data-i18n="tr">Her ara&ccedil; varsay&inodot;lan olarak bypass modunda &ccedil;al&inodot;&scedil;&inodot;r. Standart onay ak&inodot;&scedil;&inodot; gerekiyorsa komutun sonuna <code>-normal</code> ekleyin.</span>
+    </p>
+
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-icon">C</div>
+        <h3>Claude</h3>
+        <p data-i18n="en">Anthropic's Claude CLI with full permissions. Reads, writes, and executes without asking. The backbone of autonomous coding sessions.</p>
+        <p data-i18n="de">Anthropics Claude CLI mit vollen Berechtigungen. Liest, schreibt und f&uuml;hrt aus, ohne nachzufragen. Das R&uuml;ckgrat autonomer Coding-Sessions.</p>
+        <p data-i18n="tr">Anthropic'in Claude CLI's&inodot;, tam yetkilerle. Sormadan okur, yazar ve &ccedil;al&inodot;&scedil;t&inodot;r&inodot;r. Otonom kodlama oturumlar&inodot;n&inodot;n temel ta&scedil;&inodot;.</p>
+        <div class="tool-commands">
+          <code>claude <span class="flag">--dangerously-skip-permissions</span></code>
+          <code>claude-normal</code>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-icon">Cx</div>
+        <h3>Codex</h3>
+        <p data-i18n="en">OpenAI's Codex CLI with full sandbox bypass. Approvals and sandboxing disabled so it can operate at full speed.</p>
+        <p data-i18n="de">OpenAIs Codex CLI mit vollem Sandbox-Bypass. Freigaben und Sandboxing sind deaktiviert, damit es mit voller Geschwindigkeit arbeiten kann.</p>
+        <p data-i18n="tr">OpenAI'&inodot;n Codex CLI's&inodot;, tam sandbox bypass ile. Onaylar ve sandbox devre d&inodot;&scedil;&inodot; b&inodot;rak&inodot;ld&inodot;, tam h&inodot;zda &ccedil;al&inodot;&scedil;&inodot;r.</p>
+        <div class="tool-commands">
+          <code>codex <span class="flag">--dangerously-bypass-approvals-and-sandbox</span></code>
+          <code>codex-normal</code>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-icon">G</div>
+        <h3>Gemini</h3>
+        <p data-i18n="en">Google's Gemini CLI in yolo mode. No confirmations, no guardrails. Just direct execution of whatever needs to happen.</p>
+        <p data-i18n="de">Googles Gemini CLI im Yolo-Modus. Keine Best&auml;tigungen, keine Leitplanken. Einfach direkte Ausf&uuml;hrung von allem, was n&ouml;tig ist.</p>
+        <p data-i18n="tr">Google'&inodot;n Gemini CLI's&inodot; yolo modunda. Onay yok, korkuluk yok. Ne gerekiyorsa do&gbreve;rudan &ccedil;al&inodot;&scedil;t&inodot;r&inodot;r.</p>
+        <div class="tool-commands">
+          <code>gemini <span class="flag">--yolo</span></code>
+          <code>gemini-normal</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Features -->
+  <section id="features" class="reveal">
+    <div class="section-label">
+      <span data-i18n="en">Features</span>
+      <span data-i18n="de">Funktionen</span>
+      <span data-i18n="tr">&Ouml;zellikler</span>
+    </div>
+    <h2 class="section-title">
+      <span data-i18n="en">Built for unattended work.</span>
+      <span data-i18n="de">Gebaut f&uuml;r unbeaufsichtigtes Arbeiten.</span>
+      <span data-i18n="tr">G&ouml;zetimsiz &ccedil;al&inodot;&scedil;ma i&ccedil;in tasarland&inodot;.</span>
+    </h2>
+
+    <div class="feature-card" style="margin-top: 3rem;">
+      <span class="feature-icon">&#x26a1;</span>
+      <h3 data-i18n="en">One Script Setup</h3>
+      <h3 data-i18n="de">Ein-Script-Setup</h3>
+      <h3 data-i18n="tr">Tek Script Kurulum</h3>
+      <p data-i18n="en">Run one bash script on a fresh Linux machine. It installs Docker, generates all config files, builds the image. Nothing to clone, nothing to configure manually.</p>
+      <p data-i18n="de">F&uuml;hre ein einziges Bash-Script auf einer frischen Linux-Maschine aus. Es installiert Docker, generiert alle Konfigurationsdateien und baut das Image. Nichts zu klonen, nichts manuell zu konfigurieren.</p>
+      <p data-i18n="tr">Temiz bir Linux makinesinde tek bir bash scripti &ccedil;al&inodot;&scedil;t&inodot;r&inodot;n. Docker'&inodot; kurar, t&uuml;m konfig&uuml;rasyon dosyalar&inodot;n&inodot; olu&scedil;turur, imaj&inodot; derler. Klonlama yok, manuel ayar yok.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">&#x1f4e6;</span>
+        <h3 data-i18n="en">Complete Sandbox</h3>
+        <h3 data-i18n="de">Vollst&auml;ndige Sandbox</h3>
+        <h3 data-i18n="tr">Tam Sandbox</h3>
+        <p data-i18n="en">Everything runs inside Docker. Your host machine stays untouched. AI agents get root inside the container, not on your system.</p>
+        <p data-i18n="de">Alles l&auml;uft innerhalb von Docker. Dein Host-System bleibt unber&uuml;hrt. KI-Agenten bekommen Root im Container, nicht auf deinem System.</p>
+        <p data-i18n="tr">Her &scedil;ey Docker i&ccedil;inde &ccedil;al&inodot;&scedil;&inodot;r. Ana makineniz dokunulmaz kal&inodot;r. Yapay zeka ajanlar&inodot; container i&ccedil;inde root al&inodot;r, sisteminizde de&gbreve;il.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">&#x1f433;</span>
+        <h3>Docker-in-Docker</h3>
+        <p data-i18n="en">The container has access to the host Docker socket. AI agents can build images, spin up services, run tests in containers, and manage full deployment pipelines.</p>
+        <p data-i18n="de">Der Container hat Zugriff auf den Docker-Socket des Hosts. KI-Agenten k&ouml;nnen Images bauen, Services starten, Tests in Containern ausf&uuml;hren und komplette Deployment-Pipelines verwalten.</p>
+        <p data-i18n="tr">Container, host Docker soketine eri&scedil;ebilir. Yapay zeka ajanlar&inodot; imaj olu&scedil;turabilir, servis ba&scedil;latabilir, container i&ccedil;inde test &ccedil;al&inodot;&scedil;t&inodot;rabilir ve tam deployment pipeline'lar&inodot; y&ouml;netebilir.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">&#x1f504;</span>
+        <h3 data-i18n="en">Self-Healing Wrappers</h3>
+        <h3 data-i18n="de">Selbstheilende Wrapper</h3>
+        <h3 data-i18n="tr">Kendini Onaran Wrapper'lar</h3>
+        <p data-i18n="en">A cron-based watchdog checks every 5 minutes. If a CLI auto-updates and overwrites its wrapper, the watchdog restores bypass mode automatically.</p>
+        <p data-i18n="de">Ein Cron-basierter Watchdog pr&uuml;ft alle 5 Minuten. Wenn ein CLI sich automatisch aktualisiert und seinen Wrapper &uuml;berschreibt, stellt der Watchdog den Bypass-Modus automatisch wieder her.</p>
+        <p data-i18n="tr">Cron tabanl&inodot; bir watchdog her 5 dakikada kontrol eder. Bir CLI otomatik g&uuml;ncellenip wrapper'&inodot;n&inodot; &uuml;zerine yazarsa, watchdog bypass modunu otomatik olarak geri y&uuml;kler.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">&#x1f4bb;</span>
+        <h3 data-i18n="en">Persistent Sessions</h3>
+        <h3 data-i18n="de">Persistente Sitzungen</h3>
+        <h3 data-i18n="tr">Kal&inodot;c&inodot; Oturumlar</h3>
+        <p data-i18n="en">Run <code>./enter.sh</code> to drop into the container and start working. Use <code>tmux</code> inside to keep AI agents running after you disconnect. Come back anytime and pick up where you left off.</p>
+        <p data-i18n="de">Starte <code>./enter.sh</code>, um den Container zu betreten und loszulegen. Nutze <code>tmux</code> darin, um KI-Agenten weiterlaufen zu lassen, nachdem du dich abgemeldet hast. Komm jederzeit zur&uuml;ck und mach weiter, wo du aufgeh&ouml;rt hast.</p>
+        <p data-i18n="tr"><code>./enter.sh</code> ile container'a girin ve &ccedil;al&inodot;&scedil;maya ba&scedil;lay&inodot;n. Ba&gbreve;lant&inodot;y&inodot; kestikten sonra yapay zeka ajanlar&inodot;n&inodot;n &ccedil;al&inodot;&scedil;maya devam etmesi i&ccedil;in i&ccedil;eride <code>tmux</code> kullan&inodot;n. Diledi&gbreve;iniz zaman geri d&ouml;n&uuml;p kald&inodot;&gbreve;&inodot;n&inodot;z yerden devam edin.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Use Cases -->
+  <section id="usecases" class="reveal">
+    <div class="section-label">
+      <span data-i18n="en">Use Cases</span>
+      <span data-i18n="de">Anwendungsf&auml;lle</span>
+      <span data-i18n="tr">Kullan&inodot;m Alanlar&inodot;</span>
+    </div>
+    <h2 class="section-title">
+      <span data-i18n="en">What you can build with it.</span>
+      <span data-i18n="de">Was du damit bauen kannst.</span>
+      <span data-i18n="tr">Bununla neler yapabilirsiniz.</span>
+    </h2>
+
+    <div class="usecases-grid">
+      <div class="usecase-card">
+        <div class="usecase-num">01</div>
+        <h3 data-i18n="en">Autonomous Coding</h3>
+        <h3 data-i18n="de">Autonomes Programmieren</h3>
+        <h3 data-i18n="tr">Otonom Kodlama</h3>
+        <p data-i18n="en">Hand off a task and walk away. The AI reads your codebase, writes code, runs tests, and iterates on errors. All without a single confirmation prompt.</p>
+        <p data-i18n="de">Gib eine Aufgabe ab und geh. Die KI liest deine Codebasis, schreibt Code, f&uuml;hrt Tests aus und iteriert bei Fehlern. Alles ohne eine einzige Best&auml;tigungsaufforderung.</p>
+        <p data-i18n="tr">G&ouml;revi verin ve gidin. Yapay zeka kod taban&inodot;n&inodot;z&inodot; okur, kod yazar, testleri &ccedil;al&inodot;&scedil;t&inodot;r&inodot;r ve hatalar&inodot; d&uuml;zeltir. Tek bir onay sormadan.</p>
+      </div>
+
+      <div class="usecase-card">
+        <div class="usecase-num">02</div>
+        <h3 data-i18n="en">CI/CD Pipeline Development</h3>
+        <h3 data-i18n="de">CI/CD-Pipeline-Entwicklung</h3>
+        <h3 data-i18n="tr">CI/CD Pipeline Geli&scedil;tirme</h3>
+        <p data-i18n="en">With Docker-in-Docker, AI agents can create Dockerfiles, build images, spin up test services, and validate entire deployment flows inside the sandbox.</p>
+        <p data-i18n="de">Dank Docker-in-Docker k&ouml;nnen KI-Agenten Dockerfiles erstellen, Images bauen, Test-Services starten und komplette Deployment-Abl&auml;ufe in der Sandbox validieren.</p>
+        <p data-i18n="tr">Docker-in-Docker sayesinde yapay zeka ajanlar&inodot; Dockerfile olu&scedil;turabilir, imaj derleyebilir, test servisleri ba&scedil;latabilir ve t&uuml;m deployment ak&inodot;&scedil;lar&inodot;n&inodot; sandbox i&ccedil;inde do&gbreve;rulayabilir.</p>
+      </div>
+
+      <div class="usecase-card">
+        <div class="usecase-num">03</div>
+        <h3 data-i18n="en">Rapid Prototyping</h3>
+        <h3 data-i18n="de">Schnelles Prototyping</h3>
+        <h3 data-i18n="tr">H&inodot;zl&inodot; Prototipleme</h3>
+        <p data-i18n="en">Spin up the container, describe what you want, and let the AI scaffold an entire project. Install dependencies, write boilerplate, configure tools. All hands-free.</p>
+        <p data-i18n="de">Starte den Container, beschreibe was du willst und lass die KI ein ganzes Projekt aufbauen. Abh&auml;ngigkeiten installieren, Boilerplate schreiben, Tools konfigurieren. Alles freih&auml;ndig.</p>
+        <p data-i18n="tr">Container'&inodot; ba&scedil;lat&inodot;n, ne istedi&gbreve;inizi anlat&inodot;n ve yapay zekan&inodot;n t&uuml;m projeyi iskele olarak kurmas&inodot;n&inodot; izleyin. Ba&gbreve;&inodot;ml&inodot;l&inodot;klar, &scedil;ablonlar, ara&ccedil; ayarlar&inodot;. Tamamen eller serbest.</p>
+      </div>
+
+      <div class="usecase-card">
+        <div class="usecase-num">04</div>
+        <h3 data-i18n="en">Multi-Agent Workflows</h3>
+        <h3 data-i18n="de">Multi-Agenten-Workflows</h3>
+        <h3 data-i18n="tr">&Ccedil;oklu Ajan &Ccedil;al&inodot;&scedil;ma Ak&inodot;&scedil;lar&inodot;</h3>
+        <p data-i18n="en">Run Claude, Codex, and Gemini side by side. Use one to generate, another to review, a third to test. Compare outputs across models in a single terminal session.</p>
+        <p data-i18n="de">Lass Claude, Codex und Gemini parallel laufen. Nutze eins zum Generieren, eins zum Review, eins zum Testen. Vergleiche die Ergebnisse verschiedener Modelle in einer einzigen Terminal-Session.</p>
+        <p data-i18n="tr">Claude, Codex ve Gemini'yi yan yana &ccedil;al&inodot;&scedil;t&inodot;r&inodot;n. Birini &uuml;retmek, birini incelemek, birini test etmek i&ccedil;in kullan&inodot;n. Tek bir terminal oturumunda modellerin &ccedil;&inodot;kt&inodot;lar&inodot;n&inodot; kar&scedil;&inodot;la&scedil;t&inodot;r&inodot;n.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Getting Started -->
+  <section id="install" class="install-section reveal">
+    <div class="section-label">
+      <span data-i18n="en">Getting Started</span>
+      <span data-i18n="de">Erste Schritte</span>
+      <span data-i18n="tr">Ba&scedil;lang&inodot;&ccedil;</span>
+    </div>
+    <h2 class="section-title">
+      <span data-i18n="en">One command. Full environment.</span>
+      <span data-i18n="de">Ein Befehl. Komplette Umgebung.</span>
+      <span data-i18n="tr">Tek komut. Tam ortam.</span>
+    </h2>
+    <p class="section-desc" style="margin: 0 auto;">
+      <span data-i18n="en">Downloads the setup script, installs Docker if needed, builds the image, and creates everything. Run it and walk away.</span>
+      <span data-i18n="de">L&auml;dt das Setup-Script herunter, installiert Docker falls n&ouml;tig, baut das Image und erstellt alles. Ausf&uuml;hren und fertig.</span>
+      <span data-i18n="tr">Kurulum scriptini indirir, gerekirse Docker kurar, imaj&inodot; derler ve her &scedil;eyi olu&scedil;turur. &Ccedil;al&inodot;&scedil;t&inodot;r&inodot;n, gerisini b&inodot;rak&inodot;n.</span>
+    </p>
+
+    <div class="hero-terminal" style="max-width: 680px; margin: 3rem auto 0; animation: none; opacity: 1;">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span>bash</span>
+      </div>
+      <div class="terminal-body" style="position: relative;">
+        <span class="prompt">$</span> <span class="cmd">curl -fsSL \<br>&nbsp;&nbsp;https://raw.githubusercontent.com/ramazanyavuz/clauding/main/setup-clauding.sh \<br>&nbsp;&nbsp;| sudo bash</span>
+        <button class="copy-btn" style="position: absolute; top: 1.25rem; right: 1.5rem;" onclick="copyCmd(this, 'curl -fsSL https://raw.githubusercontent.com/ramazanyavuz/clauding/main/setup-clauding.sh | sudo bash')">copy</button>
+      </div>
+    </div>
+
+    <div class="install-block" style="margin-top: 2rem;">
+      <div class="install-step">
+        <div class="install-step-label">
+          <span data-i18n="en">Then enter the container</span>
+          <span data-i18n="de">Dann den Container betreten</span>
+          <span data-i18n="tr">Ard&inodot;ndan container'a girin</span>
+        </div>
+        <div class="install-cmd">
+          <span><span class="prompt-char">$</span> cd clauding && ./enter.sh</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'cd clauding && ./enter.sh')">copy</button>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="install-step-label">
+          <span data-i18n="en">Authenticate and go</span>
+          <span data-i18n="de">Authentifizieren und loslegen</span>
+          <span data-i18n="tr">Kimlik do&gbreve;rulay&inodot;n ve ba&scedil;lay&inodot;n</span>
+        </div>
+        <div class="install-cmd">
+          <span><span class="prompt-char">$</span> claude</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'claude')">copy</button>
+        </div>
+        <div class="install-cmd" style="margin-top: 0.5rem;">
+          <span><span class="prompt-char">$</span> codex</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'codex')">copy</button>
+        </div>
+        <div class="install-cmd" style="margin-top: 0.5rem;">
+          <span><span class="prompt-char">$</span> gemini</span>
+          <button class="copy-btn" onclick="copyCmd(this, 'gemini')">copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p class="footer-creator">
+      <span data-i18n="en">Created by <a href="https://ramazan-yavuz.tr" target="_blank" style="color: var(--text-primary); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--border-bright); transition: border-color 0.2s;">Ramazan Yavuz</a></span>
+      <span data-i18n="de">Erstellt von <a href="https://ramazan-yavuz.tr" target="_blank" style="color: var(--text-primary); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--border-bright); transition: border-color 0.2s;">Ramazan Yavuz</a></span>
+      <span data-i18n="tr"><a href="https://ramazan-yavuz.tr" target="_blank" style="color: var(--text-primary); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--border-bright); transition: border-color 0.2s;">Ramazan Yavuz</a> taraf&inodot;ndan olu&scedil;turuldu</span>
+    </p>
+    <div class="footer-links">
+      <a href="https://github.com/ramazanyavuz/clauding" target="_blank">GitHub</a>
+      <a href="https://github.com/ramazanyavuz/clauding/blob/main/setup-clauding.sh" target="_blank">setup-clauding.sh</a>
+    </div>
+  </footer>
+
+  <script>
+    // Language switcher
+    document.querySelectorAll('[data-set-lang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.dataset.setLang;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (window._restartDemo) window._restartDemo();
+      });
+    });
+
+    // Copy button
+    function copyCmd(btnOrText, text) {
+      const btn = typeof btnOrText === 'string' ? event.target : btnOrText;
+      const cmd = text || btnOrText;
+      navigator.clipboard.writeText(cmd).then(() => {
+        btn.textContent = 'copied!';
+        btn.style.color = 'var(--accent-3)';
+        btn.style.borderColor = 'var(--accent-3)';
+        setTimeout(() => {
+          btn.textContent = 'copy';
+          btn.style.color = '';
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Hero demo animation
+    (function() {
+      const container = document.getElementById('demo-lines');
+      const stepsByLang = {
+        en: [
+          { type: 'user', text: 'Research the top 5 Node.js ORMs, compare their TypeScript support,\nthen scaffold a REST API with the best one. Include Docker setup,\ntests, and CI config.' },
+          { type: 'claude', text: 'On it. This will take a few steps.' },
+          { type: 'action', text: 'Searching npm registry and GitHub for ORM comparisons...' },
+          { type: 'action-done', text: 'Compared Prisma, Drizzle, TypeORM, Sequelize, MikroORM' },
+          { type: 'action', text: 'Selecting Prisma (best TypeScript support, active maintenance)...' },
+          { type: 'action', text: 'Creating project structure...' },
+          { type: 'action-done', text: 'Generated 14 files across src/, prisma/, test/, .github/' },
+          { type: 'action', text: 'Writing Dockerfile and docker-compose.yaml...' },
+          { type: 'action-done', text: 'Multi-stage build with postgres service' },
+          { type: 'action', text: 'Installing dependencies...' },
+          { type: 'action-done', text: 'npm install complete (47 packages)' },
+          { type: 'action', text: 'Running tests...' },
+          { type: 'action-done', text: '12 tests passed' },
+          { type: 'action', text: 'Writing GitHub Actions CI pipeline...' },
+          { type: 'action-done', text: '.github/workflows/ci.yml created' },
+          { type: 'done', text: 'All done. Project is ready at ./node-rest-api/' },
+        ],
+        de: [
+          { type: 'user', text: 'Recherchiere die Top 5 Node.js ORMs, vergleiche deren TypeScript-Support,\ndann erstelle eine REST API mit dem besten. Inklusive Docker-Setup,\nTests und CI-Konfiguration.' },
+          { type: 'claude', text: 'Bin dran. Das braucht ein paar Schritte.' },
+          { type: 'action', text: 'Durchsuche npm-Registry und GitHub nach ORM-Vergleichen...' },
+          { type: 'action-done', text: 'Prisma, Drizzle, TypeORM, Sequelize, MikroORM verglichen' },
+          { type: 'action', text: 'W\u00e4hle Prisma (bester TypeScript-Support, aktive Wartung)...' },
+          { type: 'action', text: 'Erstelle Projektstruktur...' },
+          { type: 'action-done', text: '14 Dateien in src/, prisma/, test/, .github/ generiert' },
+          { type: 'action', text: 'Schreibe Dockerfile und docker-compose.yaml...' },
+          { type: 'action-done', text: 'Multi-Stage Build mit Postgres-Service' },
+          { type: 'action', text: 'Installiere Abh\u00e4ngigkeiten...' },
+          { type: 'action-done', text: 'npm install abgeschlossen (47 Pakete)' },
+          { type: 'action', text: 'F\u00fchre Tests aus...' },
+          { type: 'action-done', text: '12 Tests bestanden' },
+          { type: 'action', text: 'Schreibe GitHub Actions CI-Pipeline...' },
+          { type: 'action-done', text: '.github/workflows/ci.yml erstellt' },
+          { type: 'done', text: 'Fertig. Projekt bereit unter ./node-rest-api/' },
+        ],
+        tr: [
+          { type: 'user', text: 'En iyi 5 Node.js ORM\u2019ini ara\u015ft\u0131r, TypeScript desteklerini kar\u015f\u0131la\u015ft\u0131r,\nsonra en iyisiyle bir REST API olu\u015ftur. Docker kurulumu,\ntestler ve CI konfig\u00fcrasyonu dahil.' },
+          { type: 'claude', text: '\u00dczerinde \u00e7al\u0131\u015f\u0131yorum. Birka\u00e7 ad\u0131m gerekecek.' },
+          { type: 'action', text: 'npm registry ve GitHub\u2019da ORM kar\u015f\u0131la\u015ft\u0131rmalar\u0131 aran\u0131yor...' },
+          { type: 'action-done', text: 'Prisma, Drizzle, TypeORM, Sequelize, MikroORM kar\u015f\u0131la\u015ft\u0131r\u0131ld\u0131' },
+          { type: 'action', text: 'Prisma se\u00e7iliyor (en iyi TypeScript deste\u011fi, aktif bak\u0131m)...' },
+          { type: 'action', text: 'Proje yap\u0131s\u0131 olu\u015fturuluyor...' },
+          { type: 'action-done', text: 'src/, prisma/, test/, .github/ i\u00e7inde 14 dosya olu\u015fturuldu' },
+          { type: 'action', text: 'Dockerfile ve docker-compose.yaml yaz\u0131l\u0131yor...' },
+          { type: 'action-done', text: 'Postgres servisli multi-stage build' },
+          { type: 'action', text: 'Ba\u011f\u0131ml\u0131l\u0131klar y\u00fckleniyor...' },
+          { type: 'action-done', text: 'npm install tamamland\u0131 (47 paket)' },
+          { type: 'action', text: 'Testler \u00e7al\u0131\u015ft\u0131r\u0131l\u0131yor...' },
+          { type: 'action-done', text: '12 test ge\u00e7ti' },
+          { type: 'action', text: 'GitHub Actions CI pipeline yaz\u0131l\u0131yor...' },
+          { type: 'action-done', text: '.github/workflows/ci.yml olu\u015fturuldu' },
+          { type: 'done', text: 'Tamam. Proje ./node-rest-api/ dizininde haz\u0131r.' },
+        ],
+      };
+
+      function getSteps() {
+        const lang = document.documentElement.dataset.lang || 'en';
+        return stepsByLang[lang] || stepsByLang.en;
+      }
+
+      let currentStep = 0;
+      let loopTimeout = null;
+
+      function addLine(step) {
+        const line = document.createElement('div');
+        line.className = 'line';
+
+        if (step.type === 'user') {
+          line.classList.add('user-prompt');
+          line.innerHTML = '<span class="label">you &gt;</span> ' + step.text.replace(/\n/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+        } else if (step.type === 'claude') {
+          line.classList.add('claude-line');
+          line.innerHTML = '<span class="label">claude &gt;</span> ' + step.text;
+        } else if (step.type === 'action') {
+          line.classList.add('action');
+          line.innerHTML = '<span class="spinner">&#9696;</span> ' + step.text;
+        } else if (step.type === 'action-done') {
+          line.classList.add('action');
+          line.innerHTML = '<span class="check">&#10003;</span> ' + step.text;
+        } else if (step.type === 'done') {
+          line.classList.add('done');
+          line.innerHTML = '<span class="label">claude &gt;</span> ' + step.text;
+        }
+
+        container.appendChild(line);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => { line.classList.add('visible'); });
+        });
+
+        // Replace spinner with check when next action-done arrives
+        if (step.type === 'action-done') {
+          const actions = container.querySelectorAll('.action');
+          if (actions.length >= 2) {
+            const prev = actions[actions.length - 2];
+            const spinner = prev.querySelector('.spinner');
+            if (spinner) {
+              spinner.outerHTML = '<span class="check">&#10003;</span>';
+            }
+          }
+        }
+      }
+
+      window._restartDemo = function() {
+        if (loopTimeout) clearTimeout(loopTimeout);
+        runDemo();
+      };
+
+      function runDemo() {
+        container.innerHTML = '';
+        currentStep = 0;
+        const steps = getSteps();
+
+        function nextStep() {
+          if (currentStep >= steps.length) {
+            return;
+          }
+          addLine(steps[currentStep]);
+          const step = steps[currentStep];
+          currentStep++;
+
+          let delay;
+          if (step.type === 'user') delay = 1200;
+          else if (step.type === 'claude') delay = 800;
+          else if (step.type === 'action') delay = 900;
+          else if (step.type === 'action-done') delay = 400;
+          else if (step.type === 'done') delay = 0;
+          else delay = 500;
+
+          loopTimeout = setTimeout(nextStep, delay);
+        }
+
+        loopTimeout = setTimeout(nextStep, 600);
+      }
+
+      // Start when hero terminal is visible
+      const demoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            runDemo();
+            demoObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.3 });
+      demoObserver.observe(document.getElementById('hero-demo'));
+    })();
+  </script>
+
+</body>
+</html>
