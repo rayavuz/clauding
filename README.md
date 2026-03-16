@@ -63,6 +63,10 @@ clauding/
   workspace/              # Your working directory (bind-mounted)
 ```
 
+## Disclaimer
+
+This software is provided "as is", without warranty of any kind, express or implied. The authors are not liable for any damages, data loss, or unintended consequences arising from its use. AI agents running in bypass mode can execute arbitrary code, install packages, and modify files without confirmation. Use at your own risk and always review what the agents produce.
+
 ## Author
 
 **Ramazan Yavuz**

@@ -35,6 +35,8 @@
       scroll-behavior: smooth;
       scrollbar-width: thin;
       scrollbar-color: var(--border-bright) var(--bg-deep);
+      overflow-x: hidden;
+      max-width: 100%;
     }
 
     body {
@@ -140,6 +142,7 @@
       text-align: center;
       padding: 8rem 2rem 4rem;
       position: relative;
+      overflow: hidden;
     }
 
     .hero-grid {
@@ -313,6 +316,8 @@
       font-size: 0.85rem;
       line-height: 1.9;
       text-align: left;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .terminal-body .prompt { color: var(--accent-3); }
     .terminal-body .cmd { color: var(--text-primary); }
@@ -661,8 +666,15 @@
       nav { padding: 0.75rem 1rem; }
       section { padding: 4rem 1.25rem; }
       .hero { padding: 7rem 1.25rem 3rem; }
-      .terminal-body { font-size: 0.75rem; padding: 1rem; }
+      .terminal-body { font-size: 0.7rem; padding: 1rem; overflow-x: auto; }
       .install-cmd { font-size: 0.75rem; flex-direction: column; align-items: flex-start; }
+      .tool-commands code { font-size: 0.65rem; word-break: break-all; }
+      .hero-terminal { max-width: 100%; }
+      .install-block { padding: 1.5rem 1rem; }
+      .install-cmd span { word-break: break-all; }
+      #demo-lines .line.user-prompt { word-break: break-word; }
+      .hero-glow { width: 300px; height: 200px; }
+      .footer-links { flex-wrap: wrap; }
     }
 
     /* --- Demo terminal --- */
@@ -900,17 +912,17 @@
       <span data-i18n="tr">G&ouml;zetimsiz &ccedil;al&inodot;&scedil;ma i&ccedil;in tasarland&inodot;.</span>
     </h2>
 
-    <div class="feature-card" style="margin-top: 3rem;">
-      <span class="feature-icon">&#x26a1;</span>
-      <h3 data-i18n="en">One Script Setup</h3>
-      <h3 data-i18n="de">Ein-Script-Setup</h3>
-      <h3 data-i18n="tr">Tek Script Kurulum</h3>
-      <p data-i18n="en">Run one bash script on a fresh Linux machine. It installs Docker, generates all config files, builds the image. Nothing to clone, nothing to configure manually.</p>
-      <p data-i18n="de">F&uuml;hre ein einziges Bash-Script auf einer frischen Linux-Maschine aus. Es installiert Docker, generiert alle Konfigurationsdateien und baut das Image. Nichts zu klonen, nichts manuell zu konfigurieren.</p>
-      <p data-i18n="tr">Temiz bir Linux makinesinde tek bir bash scripti &ccedil;al&inodot;&scedil;t&inodot;r&inodot;n. Docker'&inodot; kurar, t&uuml;m konfig&uuml;rasyon dosyalar&inodot;n&inodot; olu&scedil;turur, imaj&inodot; derler. Klonlama yok, manuel ayar yok.</p>
-    </div>
+    <div class="features-grid" style="margin-top: 3rem;">
+      <div class="feature-card">
+        <span class="feature-icon">&#x26a1;</span>
+        <h3 data-i18n="en">One Script Setup</h3>
+        <h3 data-i18n="de">Ein-Script-Setup</h3>
+        <h3 data-i18n="tr">Tek Script Kurulum</h3>
+        <p data-i18n="en">Run one bash script on a fresh Linux machine. It installs Docker, generates all config files, builds the image. Nothing to clone, nothing to configure manually.</p>
+        <p data-i18n="de">F&uuml;hre ein einziges Bash-Script auf einer frischen Linux-Maschine aus. Es installiert Docker, generiert alle Konfigurationsdateien und baut das Image. Nichts zu klonen, nichts manuell zu konfigurieren.</p>
+        <p data-i18n="tr">Temiz bir Linux makinesinde tek bir bash scripti &ccedil;al&inodot;&scedil;t&inodot;r&inodot;n. Docker'&inodot; kurar, t&uuml;m konfig&uuml;rasyon dosyalar&inodot;n&inodot; olu&scedil;turur, imaj&inodot; derler. Klonlama yok, manuel ayar yok.</p>
+      </div>
 
-    <div class="features-grid">
       <div class="feature-card">
         <span class="feature-icon">&#x1f4e6;</span>
         <h3 data-i18n="en">Complete Sandbox</h3>
@@ -958,15 +970,43 @@
         <p data-i18n="de">Das Setup-Script enth&auml;lt keine API-Schl&uuml;ssel, Tokens oder Secrets. Du authentifizierst jedes CLI interaktiv im Container. Zugangsdaten bleiben im Home-Verzeichnis des Containers, nie auf deinem Host.</p>
         <p data-i18n="tr">Kurulum scripti s&inodot;f&inodot;r API anahtar&inodot;, token veya gizli bilgi i&ccedil;erir. Her CLI'y&inodot; container i&ccedil;inde interaktif olarak kimlik do&gbreve;rulars&inodot;n&inodot;z. Kimlik bilgileri container'&inodot;n ev dizininde kal&inodot;r, asla ana makinenizde de&gbreve;il.</p>
       </div>
+    </div>
+  </section>
 
+  <hr class="divider">
+
+  <!-- Works Great With -->
+  <section id="compatibility" class="reveal">
+    <div class="section-label">
+      <span data-i18n="en">Compatibility</span>
+      <span data-i18n="de">Kompatibilit&auml;t</span>
+      <span data-i18n="tr">Uyumluluk</span>
+    </div>
+    <h2 class="section-title">
+      <span data-i18n="en">Works great with.</span>
+      <span data-i18n="de">Funktioniert hervorragend mit.</span>
+      <span data-i18n="tr">Harika &ccedil;al&inodot;&scedil;&inodot;r.</span>
+    </h2>
+
+    <div class="features-grid" style="margin-top: 3rem;">
       <div class="feature-card">
         <span class="feature-icon">&#x1f310;</span>
-        <h3 data-i18n="en">Works with Claude Remote</h3>
-        <h3 data-i18n="de">Funktioniert mit Claude Remote</h3>
-        <h3 data-i18n="tr">Claude Remote ile &Ccedil;al&inodot;&scedil;&inodot;r</h3>
+        <h3 data-i18n="en">Claude Remote</h3>
+        <h3 data-i18n="de">Claude Remote</h3>
+        <h3 data-i18n="tr">Claude Remote</h3>
         <p data-i18n="en">Pair with Claude's SSH remote execution for the best experience. Since everything is already sandboxed in Docker, you need far fewer permission approvals than running on bare metal. The container is the trust boundary.</p>
         <p data-i18n="de">Kombiniere es mit Claudes SSH-Remote-Ausf&uuml;hrung f&uuml;r das beste Erlebnis. Da alles bereits in Docker sandboxed ist, brauchst du weit weniger Berechtigungsgenehmigungen als auf Bare Metal. Der Container ist die Vertrauensgrenze.</p>
         <p data-i18n="tr">En iyi deneyim i&ccedil;in Claude'un SSH uzaktan &ccedil;al&inodot;&scedil;t&inodot;rma &ouml;zelli&gbreve;iyle birle&scedil;tirin. Her &scedil;ey zaten Docker i&ccedil;inde sandbox'lanm&inodot;&scedil; oldu&gbreve;undan, bare metal'e k&inodot;yasla &ccedil;ok daha az izin onay&inodot;na ihtiyac&inodot;n&inodot;z olur. Container g&uuml;ven s&inodot;n&inodot;r&inodot;d&inodot;r.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">&#x1fab7;</span>
+        <h3 data-i18n="en">WSL (Windows Subsystem for Linux)</h3>
+        <h3 data-i18n="de">WSL (Windows-Subsystem f&uuml;r Linux)</h3>
+        <h3 data-i18n="tr">WSL (Linux i&ccedil;in Windows Alt Sistemi)</h3>
+        <p data-i18n="en">Run Clauding directly inside WSL on any Windows machine. Docker Desktop or the WSL Docker engine handles the rest. Full Linux environment, full sandbox, no VM overhead to worry about.</p>
+        <p data-i18n="de">Starte Clauding direkt in WSL auf jedem Windows-Rechner. Docker Desktop oder die WSL-Docker-Engine erledigt den Rest. Volle Linux-Umgebung, volle Sandbox, kein VM-Overhead.</p>
+        <p data-i18n="tr">Clauding'i herhangi bir Windows makinesinde do&gbreve;rudan WSL i&ccedil;inde &ccedil;al&inodot;&scedil;t&inodot;r&inodot;n. Docker Desktop veya WSL Docker motoru gerisini halleder. Tam Linux ortam&inodot;, tam sandbox, VM ek y&uuml;k&uuml; derdi yok.</p>
       </div>
     </div>
   </section>
@@ -1095,6 +1135,20 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- Disclaimer -->
+  <section class="reveal" style="text-align: center; padding-bottom: 3rem;">
+    <div class="section-label">
+      <span data-i18n="en">Disclaimer</span>
+      <span data-i18n="de">Haftungsausschluss</span>
+      <span data-i18n="tr">Sorumluluk Reddi</span>
+    </div>
+    <p class="section-desc" style="margin: 0 auto; font-size: 0.85rem; max-width: 700px;">
+      <span data-i18n="en">This software is provided "as is", without warranty of any kind. The authors are not liable for any damages, data loss, or unintended consequences arising from its use. AI agents running in bypass mode can execute arbitrary code, install packages, and modify files without confirmation. Use at your own risk and always review what the agents produce.</span>
+      <span data-i18n="de">Diese Software wird ohne jegliche Gew&auml;hrleistung zur Verf&uuml;gung gestellt. Die Autoren haften nicht f&uuml;r Sch&auml;den, Datenverlust oder unbeabsichtigte Folgen, die aus der Nutzung entstehen. KI-Agenten im Bypass-Modus k&ouml;nnen beliebigen Code ausf&uuml;hren, Pakete installieren und Dateien ohne Best&auml;tigung &auml;ndern. Nutzung auf eigene Gefahr. &Uuml;berpr&uuml;fen Sie stets, was die Agenten erzeugen.</span>
+      <span data-i18n="tr">Bu yaz&inodot;l&inodot;m hi&ccedil;bir garanti olmaks&inodot;z&inodot;n "oldu&gbreve;u gibi" sunulmaktad&inodot;r. Yazarlar, kullan&inodot;m&inodot;ndan kaynaklanan hi&ccedil;bir hasar, veri kayb&inodot; veya istenmeyen sonu&ccedil;tan sorumlu de&gbreve;ildir. Bypass modundaki yapay zeka ajanlar&inodot; rastgele kod &ccedil;al&inodot;&scedil;t&inodot;rabilir, paket y&uuml;kleyebilir ve onay almadan dosyalar&inodot; de&gbreve;i&scedil;tirebilir. Riski size aittir ve ajanlar&inodot;n &uuml;rettiklerini her zaman inceleyin.</span>
+    </p>
   </section>
 
   <!-- Footer -->
